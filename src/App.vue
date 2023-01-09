@@ -1,8 +1,8 @@
 <template>
-  <v-app id="inspire">
+  <v-app class="bg-transparent">
     <app-bar :routes="routes" base="" />
 
-    <v-main class="bg-grey-lighten-3">
+    <v-main>
       <router-view />
     </v-main>
   </v-app>

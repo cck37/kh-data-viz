@@ -3,11 +3,15 @@
     <v-container class="fill-height d-flex align-center">
       <v-avatar class="mr-10 ml-4" color="grey-darken-1" size="32"></v-avatar>
 
-      <v-btn v-for="(route, idx) in props.routes" :key="idx">
-        <router-link :to="route.path">
+      <router-link
+        v-for="(route, idx) in props.routes"
+        :to="route.path"
+        :key="idx"
+      >
+        <v-btn>
           {{ route.friendlyName }}
-        </router-link>
-      </v-btn>
+        </v-btn>
+      </router-link>
 
       <v-spacer></v-spacer>
 

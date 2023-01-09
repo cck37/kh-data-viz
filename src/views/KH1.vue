@@ -2,7 +2,7 @@
   <v-container>
     <v-row>
       <v-col cols="2">
-        <v-sheet rounded="lg">
+        <v-sheet rounded="lg" class="sticky">
           <v-list rounded="lg">
             <v-list-item link color="grey-lighten-4">
               <v-list-item-title>What's left?</v-list-item-title>
@@ -89,8 +89,7 @@ function update(root) {
   let focus = root;
   let view;
 
-  const svg = d3
-    .select("#circleChart")
+  d3.select("#circleChart")
     .select("svg")
     .attr("viewBox", [-(width / 2), -(height / 2), width, height])
     .style("display", "block")
@@ -146,8 +145,6 @@ function update(root) {
   };
 
   function zoom(event, d) {
-    const focus0 = focus;
-
     focus = d;
 
     const transition = d3
@@ -155,7 +152,7 @@ function update(root) {
       .select("svg")
       .transition()
       .duration(event.altKey ? 7500 : 750)
-      .tween("zoom", (d) => {
+      .tween("zoom", () => {
         const i = d3.interpolateZoom(view, [focus.x, focus.y, focus.r * 2]);
         return (t) => zoomTo(i(t));
       });
@@ -179,8 +176,6 @@ function update(root) {
 
 // TODO: Mimic https://observablehq.com/@d3/pack (clip-path, text structuring, etc.)
 function chart(data) {
-  const height = 932;
-  const width = 932;
   var pack = d3.pack().size([900, 900]);
 
   const round = (value, decimals) => {

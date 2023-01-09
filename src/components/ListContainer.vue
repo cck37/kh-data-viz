@@ -2,7 +2,7 @@
   <v-container>
     <v-row>
       <v-col cols="2">
-        <v-sheet rounded="lg">
+        <v-sheet rounded="lg" class="sticky">
           <v-list rounded="lg">
             <v-list-item link color="grey-lighten-4">
               <v-list-item-title>What's left?</v-list-item-title>
