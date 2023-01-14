@@ -4,9 +4,13 @@ import views from "../views";
 
 export const routes = [
   { path: "/", component: views.Home, friendlyName: "Home" },
-  { path: "/1", component: views.KH1, friendlyName: "Kingdom Hearts 1" },
-  { path: "/2", component: views.KH2, friendlyName: "Kingdom Hearts 2" },
-  { path: "/3", component: views.KH3, friendlyName: "Kingdom Hearts 3" },
+  {
+    path: "/1",
+    component: views.RecipesEssay,
+    friendlyName: "Recipes",
+  },
+  { path: "/2", component: views.KH2, friendlyName: "Enemies" },
+  { path: "/3", component: views.KH3, friendlyName: "Gummis" },
 ];
 
 const router = createRouter({
