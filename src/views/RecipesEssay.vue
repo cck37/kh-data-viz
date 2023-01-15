@@ -76,74 +76,20 @@ watchEffect(() => {
     )
   );
 });
+
+const textToId = (t) => t.replaceAll(/\s+/gi, "").replaceAll("%", "");
+
 function update(root) {
   const height = 932;
   const width = 932;
   let focus = root;
   let view;
 
-  const svg = d3
-    .select("#circleChart")
-    .select("svg")
-    .attr("viewBox", [-(width / 2), -(height / 2), width, height])
-    .style("display", "block")
-    .style("margin", "0 -14px")
-    .style("cursor", "pointer")
-    .attr("text-anchor", "middle")
-    .on("click", (event) => zoom(event, root));
-
-  const node = svg.selectAll("g").data(root.descendants()).join("g");
-
-  const circle = node
-    .append("circle")
-    .style("display", (d) => (d.parent === root ? "inline" : "none"))
-    .attr("pointer-events", (d) => (!d.children ? "none" : "auto"))
-    .on(
-      "click",
-      (event, d) => focus !== d && (zoom(event, d), event.stopPropagation())
-    );
-
-  const label = node
-    .append("text")
-    .style("display", (d) => (d.parent === root ? "inline" : "none"))
-    .text((d) =>
-      d.parent === root
-        ? d.data[0]
-        : `${d.data[0]} - ${parseFloat(d.value).toFixed(3) * 100}%`
-    )
-    .on(
-      "click",
-      (event, d) =>
-        focus !== d &&
-        d.parent === root &&
-        (zoom(event, d), event.stopPropagation())
-    )
-    .style("font-size", calculateTextFontSize)
-    .attr("dy", ".35em");
-
-  // clip paths
-  // A unique identifier for clip paths (to avoid conflicts).
-  const uid = `O-${Math.random().toString(16).slice(2)}`;
-  const calcUid = (d) => {
-    if (!d.data[0]) {
-      return `${uid}-clip-root`;
-    }
-    if (d.parent == root) {
-      return `${uid}-clip-${d.data[0]}`;
-    }
-    return `${uid}-clip-${d.data[0]}-${d.parent.data[0]}`;
-  };
-
-  const circleClipPath = node
-    .append("clipPath")
-    .attr("id", (d) => calcUid(d))
-    .append("circle")
-    .attr("r", (d) => d.r);
-
-  label.attr("clip-path", (d) => `url(${new URL(`#${calcUid(d)}`, location)})`);
-
+  /*
+    util functions that need to be in the context of the render pipeline
+  */
   var calculateTextFontSize = function (d) {
-    var id = d3.select(this).text();
+    var id = textToId(d3.select(this).text());
     var radius = 0;
     if (d.fontsize) {
       //if fontsize is already calculated use that.
@@ -160,11 +106,12 @@ function update(root) {
           radius = r;
         }
         //calculate the font size and store it in object for future
-        d.fontsize = ((2 * radius - 8) / d.computed) * 24 + "px";
-        return d.fontsize;
+        // d.fontsize = ((2 * radius - 8) / d.computed) * 20 + "px";
+        return ((2 * radius - 8) / d.computed) * 20 + "px";
       }
     }
   };
+
   const zoomTo = (v) => {
     const k = width / v[2];
 
@@ -196,17 +143,25 @@ function update(root) {
         return (t) => zoomTo(i(t));
       });
 
-    label
+    transition
+      .selectAll("text")
       .filter(function (d) {
         return d.parent === focus || this.style.display === "inline";
       })
-      .transition(transition)
+      .style("fill-opacity", function (d) {
+        return d.parent === focus ? 1 : 0;
+      })
       .on("start", function (d) {
-        if (d.parent === focus) this.style.display = "inline";
+        if (d.parent === focus) {
+          this.style.display = "inline";
+        }
       })
       .on("end", function (d) {
-        if (d.parent !== focus) this.style.display = "none";
+        if (d.parent !== focus) {
+          this.style.display = "none";
+        }
       });
+
     setTimeout(function () {
       d3.selectAll("text")
         .filter(function (d) {
@@ -215,31 +170,105 @@ function update(root) {
         .style("font-size", calculateTextFontSize);
     }, 500);
 
-    /*
-      FIX:
-        - Stroke width transtion
-        - Original label flickers behind (should disappear immediately)
-        - Outter circle should still display?
-    */
-
-    circle
+    transition
+      .selectAll("circle")
       .filter(function (d) {
-        return d.parent === focus || this.style.display === "inline";
+        return d.parent === focus || this.style.fillOpacity == 1;
       })
-      .transition(transition)
-      .style("fill-opacity", (d) => (d.parent === focus ? 1 : 0))
-      .on("start", function (d) {
-        if (d.parent === focus) this.style.display = "inline";
-      })
-      .on("end", function (d) {
-        if (d.parent !== focus) this.style.display = "none";
+      .style("fill-opacity", function (d) {
+        return d.parent === focus ? 1 : 0.5;
       });
   }
+
+  const color = d3
+    .scaleLinear()
+    .domain([-1, 2])
+    .range(["#020024", "#43BBD4"])
+    .interpolate(d3.interpolateHcl);
+
+  var circleFill = function (d) {
+    if (d["color"]) {
+      return d.color;
+    } else {
+      return color(d.depth);
+    }
+  };
+
+  const svg = d3
+    .select("#circleChart")
+    .select("svg")
+    .attr("viewBox", [-(width / 2), -(height / 2), width, height])
+    .style("display", "block")
+    .style("margin", "0 -14px")
+    .style("cursor", "pointer")
+    .attr("text-anchor", "middle")
+    .on("click", (event) => zoom(event, root));
+
+  const node = svg.selectAll("g").data(root.descendants()).join("g");
+
+  const circle = node
+    .append("circle")
+    .attr("class", function (d) {
+      return d.parent ? (d.children ? "node" : "node node--leaf") : "";
+    })
+    .style("fill", circleFill)
+    // HACK: Render order prevents parent lables from rendering; make all children render at half opacity show the root label comes through
+    // Looks pretty bad but 🤷‍♀️
+    .style("fill-opacity", (d) =>
+      d.parent ? (d.parent === root ? 1 : 0.5) : 0
+    )
+    .attr("pointer-events", (d) => (!d.children ? "none" : "auto"))
+    .on(
+      "click",
+      (event, d) => focus !== d && (zoom(event, d), event.stopPropagation())
+    )
+    .attr("id", (d) =>
+      d.parent === root
+        ? textToId(d.data[0])
+        : textToId(`${d.data[0]} - ${parseFloat(d.value).toFixed(3) * 100}%`)
+    );
+
+  const label = node
+    .append("text")
+    .attr("class", "label")
+    .style("fill-opacity", function (d) {
+      return d.parent === root ? 1 : 0;
+    })
+    .style("display", function (d) {
+      return d.parent === root ? null : "none";
+    })
+    .text((d) =>
+      d.parent === root
+        ? d.data[0]
+        : `${d.data[0]} - ${parseFloat(d.value).toFixed(3) * 100}%`
+    )
+    .style("font-size", calculateTextFontSize)
+    .attr("dy", ".35em");
+
+  // clip paths
+  // A unique identifier for clip paths (to avoid conflicts).
+  const uid = `O-${Math.random().toString(16).slice(2)}`;
+  const calcUid = (d) => {
+    if (!d.data[0]) {
+      return `${uid}-clip-root`;
+    }
+    if (d.parent == root) {
+      return `${uid}-clip-${d.data[0]}`;
+    }
+    return `${uid}-clip-${d.data[0]}-${d.parent.data[0]}`;
+  };
+
+  const circleClipPath = node
+    .append("clipPath")
+    .attr("id", (d) => calcUid(d))
+    .append("circle")
+    .attr("r", (d) => d.r);
+
+  label.attr("clip-path", (d) => `url(${new URL(`#${calcUid(d)}`, location)})`);
 
   zoomTo([root.x, root.y, root.r * 2]);
 }
 
-// TODO: Mimic https://observablehq.com/@d3/pack (clip-path, text structuring, etc.)
 function chart(data) {
   var pack = d3.pack().size([900, 900]);
 
@@ -278,25 +307,14 @@ onMounted(() => {
 </script>
 
 <style>
-.chart > div {
-  white-space: nowrap;
-  text-align: right;
-  padding: 3px;
-  margin: 1px;
-  color: white;
-}
-circle {
-  stroke: darkblue;
-  display: inline-block;
-}
-
 text {
   fill: gold;
   text-anchor: middle;
 }
 
 .node:hover {
-  stroke-width: 7px;
+  stroke-width: 3px;
   opacity: 1;
+  stroke: rgba(255, 255, 255, 0.781);
 }
 </style>
