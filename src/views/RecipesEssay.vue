@@ -106,8 +106,9 @@ function update(root) {
           radius = r;
         }
         //calculate the font size and store it in object for future
-        // d.fontsize = ((2 * radius - 8) / d.computed) * 20 + "px";
-        return ((2 * radius - 8) / d.computed) * 20 + "px";
+        //HACK: Seems like magic numbers and very finnicky.
+        d.fontsize = ((2 * radius - 8) / d.computed) * 19 + "px";
+        return d.fontsize;
       }
     }
   };
@@ -270,7 +271,7 @@ function update(root) {
 }
 
 function chart(data) {
-  var pack = d3.pack().size([900, 900]);
+  var pack = d3.pack().size([900, 900]).padding(3);
 
   const round = (value, decimals) => {
     return Number(Math.round(value + "e" + decimals) + "e-" + decimals);
@@ -307,6 +308,9 @@ onMounted(() => {
 </script>
 
 <style>
+circle {
+  padding: 5px;
+}
 text {
   fill: gold;
   text-anchor: middle;
