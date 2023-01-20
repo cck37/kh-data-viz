@@ -77,10 +77,21 @@ watchEffect(() => {
   );
 });
 
-const textToId = (t) => t.replaceAll(/\s+/gi, "").replaceAll("%", "");
+const cleanId = (t) => t.replaceAll(/\s+/gi, "").replaceAll("%", "");
+
+const nodeToId = (d) => {
+  return !d.children
+    ? cleanId(
+        `${d.data[0]} - ${parseFloat(d.value).toFixed(3) * 100}%-${
+          d.parent.data[0]
+        }`
+      )
+    : d.data[0]
+    ? cleanId(d.data[0])
+    : "undef";
+};
 
 function update(root) {
-  const height = 932;
   const width = 932;
   let focus = root;
   let view;
@@ -89,7 +100,7 @@ function update(root) {
     util functions that need to be in the context of the render pipeline
   */
   var calculateTextFontSize = function (d) {
-    var id = textToId(d3.select(this).text());
+    var id = nodeToId(d);
     var radius = 0;
     if (d.fontsize) {
       //if fontsize is already calculated use that.
@@ -107,7 +118,8 @@ function update(root) {
         }
         //calculate the font size and store it in object for future
         //HACK: Seems like magic numbers and very finnicky.
-        d.fontsize = ((2 * radius - 8) / d.computed) * 19 + "px";
+        const calcFontSize = ((2 * radius - 8) / d.computed) * 17;
+        d.fontsize = Math.min(Math.max(calcFontSize, 10), 42) + "px";
         return d.fontsize;
       }
     }
@@ -198,17 +210,12 @@ function update(root) {
   const svg = d3
     .select("#circleChart")
     .select("svg")
-    .attr("viewBox", [-(width / 2), -(height / 2), width, height])
-    .style("display", "block")
-    .style("margin", "0 -14px")
-    .style("cursor", "pointer")
-    .attr("text-anchor", "middle")
     .on("click", (event) => zoom(event, root));
 
-  const node = svg.selectAll("g").data(root.descendants()).join("g");
-
-  const circle = node
-    .append("circle")
+  const circle = svg
+    .selectAll("circle")
+    .data(root.descendants())
+    .join("circle")
     .attr("class", function (d) {
       return d.parent ? (d.children ? "node" : "node node--leaf") : "";
     })
@@ -223,14 +230,12 @@ function update(root) {
       "click",
       (event, d) => focus !== d && (zoom(event, d), event.stopPropagation())
     )
-    .attr("id", (d) =>
-      d.parent === root
-        ? textToId(d.data[0])
-        : textToId(`${d.data[0]} - ${parseFloat(d.value).toFixed(3) * 100}%`)
-    );
+    .attr("id", (d) => (d === root ? "root" : nodeToId(d)));
 
-  const label = node
-    .append("text")
+  const label = svg
+    .selectAll("text")
+    .data(root.descendants())
+    .join("text")
     .attr("class", "label")
     .style("fill-opacity", function (d) {
       return d.parent === root ? 1 : 0;
@@ -259,8 +264,10 @@ function update(root) {
     return `${uid}-clip-${d.data[0]}-${d.parent.data[0]}`;
   };
 
-  const circleClipPath = node
-    .append("clipPath")
+  const circleClipPath = svg
+    .selectAll("clipPath")
+    .data(root.descendants())
+    .join("clipPath")
     .attr("id", (d) => calcUid(d))
     .append("circle")
     .attr("r", (d) => d.r);
@@ -271,6 +278,8 @@ function update(root) {
 }
 
 function chart(data) {
+  const height = 950;
+  const width = 950;
   var pack = d3.pack().size([900, 900]).padding(3);
 
   const round = (value, decimals) => {
@@ -298,6 +307,13 @@ function chart(data) {
     .sort((a, b) => d3.descending(a.value, b.value));
 
   const root = pack(root_hierarchy);
+
+  d3.select("#circleChart")
+    .select("svg")
+    .attr("viewBox", [-(width / 2), -(height / 2), width, height])
+    .style("display", "block")
+    .style("cursor", "pointer")
+    .attr("text-anchor", "middle");
 
   update(root);
 }
