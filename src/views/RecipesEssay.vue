@@ -31,7 +31,7 @@
             <v-divider class="my-2"></v-divider>
 
             <v-list-item link color="grey-lighten-4">
-              <v-list-item-title> Refresh </v-list-item-title>
+              <v-list-item-title> Reset </v-list-item-title>
             </v-list-item>
           </v-list>
         </v-sheet>
@@ -65,16 +65,16 @@ const recipes = [
   ),
 ]; // arr->set->arr to remove dupes
 watchEffect(() => {
-  chart(
-    data.filter((comp) =>
-      selectedRecipes.value.some((r) =>
-        comp.recipes
-          .flat()
-          .map((r) => r.recipeName)
-          .some((c) => c === r)
-      )
+  let filteredData = data.filter((comp) =>
+    selectedRecipes.value.some((r) =>
+      comp.recipes
+        .flat()
+        .map((r) => r.recipeName)
+        .some((c) => c === r)
     )
   );
+  if (filteredData.length > 0) chart(filteredData);
+  else chart(data);
 });
 
 const cleanId = (t) => t.replaceAll(/\s+/gi, "").replaceAll("%", "");
@@ -214,7 +214,7 @@ function update(root) {
 
   const circle = svg
     .selectAll("circle")
-    .data(root.descendants())
+    .data(root.descendants().slice(1))
     .join("circle")
     .attr("class", function (d) {
       return d.parent ? (d.children ? "node" : "node node--leaf") : "";
