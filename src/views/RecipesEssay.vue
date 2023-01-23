@@ -38,7 +38,7 @@
       </v-col>
 
       <v-col>
-        <v-sheet min-height="70vh" rounded="lg">
+        <v-sheet min-height="70vh" rounded="lg" @click="reset()">
           <h1>Recipes Circle Packing</h1>
           <div id="circleChart"><svg></svg></div>
         </v-sheet>
@@ -54,8 +54,8 @@ import KH1Data from "../data/KH1Data";
 import * as d3 from "d3";
 
 let data = mapToFlat(KH1Data);
+let selectedRecipes = ref([]);
 
-const selectedRecipes = ref([]);
 const recipes = [
   ...new Set(
     data
@@ -64,6 +64,10 @@ const recipes = [
       .map((r) => r.recipeName)
   ),
 ]; // arr->set->arr to remove dupes
+
+const reset = () => {
+  selectedRecipes = ref([]);
+};
 watchEffect(() => {
   let filteredData = data.filter((comp) =>
     selectedRecipes.value.some((r) =>
