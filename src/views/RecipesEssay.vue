@@ -7,10 +7,11 @@
             <v-list-item link color="grey-lighten-4">
               <v-list-item-title>What's left?</v-list-item-title>
               <v-autocomplete
+                ref="autocomplete"
                 :items="recipes"
                 label="Recipes"
+                clearable
                 multiple
-                :closable-chips="true"
                 :menu-props="{ maxHeight: '400' }"
                 variant="underlined"
                 v-model="selectedRecipes"
@@ -27,33 +28,30 @@
                 </template>
               </v-autocomplete>
             </v-list-item>
-
-            <v-divider class="my-2"></v-divider>
-
-            <v-list-item link color="grey-lighten-4">
-              <v-list-item-title> Reset </v-list-item-title>
-            </v-list-item>
           </v-list>
         </v-sheet>
       </v-col>
 
       <v-col>
-        <v-sheet min-height="70vh" rounded="lg" @click="reset()">
-          <h1>Recipes Circle Packing</h1>
+        <v-sheet min-height="70vh" rounded="lg" class="rounded-e-xl bg-blur">
+          <content-header title="Where to farm?" />
           <div id="circleChart"><svg></svg></div>
         </v-sheet>
       </v-col>
     </v-row>
   </v-container>
+  <img src="/bg-chars.png" class="bg-fixed darken" />
 </template>
 
 <script setup>
 import { watchEffect, ref, onMounted } from "vue";
+import ContentHeader from "../components/ContentHeader.vue";
 import { mapToFlat } from "../utils/mapper";
 import KH1Data from "../data/KH1Data";
 import * as d3 from "d3";
 
 let data = mapToFlat(KH1Data);
+const autocomplete = ref(null);
 let selectedRecipes = ref([]);
 
 const recipes = [
@@ -65,9 +63,6 @@ const recipes = [
   ),
 ]; // arr->set->arr to remove dupes
 
-const reset = () => {
-  selectedRecipes = ref([]);
-};
 watchEffect(() => {
   let filteredData = data.filter((comp) =>
     selectedRecipes.value.some((r) =>
@@ -103,31 +98,31 @@ function update(root) {
   /*
     util functions that need to be in the context of the render pipeline
   */
-  var calculateTextFontSize = function (d) {
-    var id = nodeToId(d);
-    var radius = 0;
-    if (d.fontsize) {
-      //if fontsize is already calculated use that.
-      return d.fontsize;
-    }
-    if (!d.computed) {
-      //if computed not present get & store the getComputedTextLength() of the text field
-      d.computed = this.getComputedTextLength();
-      if (d.computed != 0) {
-        //if computed is not 0 then get the visual radius of DOM
-        var r = d3.selectAll("#" + id).attr("r");
-        //if radius present in DOM use that
-        if (r) {
-          radius = r;
-        }
-        //calculate the font size and store it in object for future
-        //HACK: Seems like magic numbers and very finnicky.
-        const calcFontSize = ((2 * radius - 8) / d.computed) * 17;
-        d.fontsize = Math.min(Math.max(calcFontSize, 10), 42) + "px";
-        return d.fontsize;
-      }
-    }
-  };
+  // var calculateTextFontSize = function (d) {
+  //   var id = nodeToId(d);
+  //   var radius = 0;
+  //   if (d.fontsize) {
+  //     //if fontsize is already calculated use that.
+  //     return d.fontsize;
+  //   }
+  //   if (!d.computed) {
+  //     //if computed not present get & store the getComputedTextLength() of the text field
+  //     d.computed = this.getComputedTextLength();
+  //     if (d.computed != 0) {
+  //       //if computed is not 0 then get the visual radius of DOM
+  //       var r = d3.selectAll("#" + id).attr("r");
+  //       //if radius present in DOM use that
+  //       if (r) {
+  //         radius = r;
+  //       }
+  //       //calculate the font size and store it in object for future
+  //       //HACK: Seems like magic numbers and very finnicky.
+  //       const calcFontSize = ((2 * radius - 8) / d.computed) * 17;
+  //       d.fontsize = Math.min(Math.max(calcFontSize, 10), 42) + "px";
+  //       return d.fontsize;
+  //     }
+  //   }
+  // };
 
   const zoomTo = (v) => {
     const k = width / v[2];
@@ -179,13 +174,13 @@ function update(root) {
         }
       });
 
-    setTimeout(function () {
-      d3.selectAll("text")
-        .filter(function (d) {
-          return d.parent === focus || this.style.display === "inline";
-        })
-        .style("font-size", calculateTextFontSize);
-    }, 500);
+    // setTimeout(function () {
+    //   d3.selectAll("text")
+    //     .filter(function (d) {
+    //       return d.parent === focus || this.style.display === "inline";
+    //     })
+    //     .style("font-size", calculateTextFontSize);
+    // }, 500);
 
     transition
       .selectAll("circle")
@@ -252,7 +247,6 @@ function update(root) {
         ? d.data[0]
         : `${d.data[0]} - ${parseFloat(d.value).toFixed(3) * 100}%`
     )
-    .style("font-size", calculateTextFontSize)
     .attr("dy", ".35em");
 
   // clip paths
@@ -340,5 +334,21 @@ text {
   stroke-width: 3px;
   opacity: 1;
   stroke: rgba(255, 255, 255, 0.781);
+}
+
+.bg-blur {
+  background-color: rgba(36, 39, 41, 0.7) !important;
+  backdrop-filter: blur(5px);
+}
+
+.bg-fixed {
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  z-index: -1;
+}
+
+.darken {
+  filter: grayscale(30%) brightness(70%);
 }
 </style>
