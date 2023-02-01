@@ -5,7 +5,7 @@
         <div class="text-h3 content">{{ props.title }}</div>
       </v-col>
       <v-col cols="1">
-        <div class="content">{{ props.title }}</div>
+        <img src="/logo.png" class="header-img" />
       </v-col>
     </v-row>
   </v-container>
@@ -30,5 +30,9 @@ const props = defineProps(["title", "img"]);
     url("/background_default.png");
   background-position: center;
   background-repeat: repeat;
+}
+.header-img {
+  aspect-ratio: 1 / 1;
+  height: 5vmin;
 }
 </style>
